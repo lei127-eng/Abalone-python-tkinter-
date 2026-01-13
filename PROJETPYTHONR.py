@@ -41,7 +41,7 @@ canva.pack()
 # Charger et afficher l'image de fond
 try:
     # 1. Chargez l'image avec Pillow
-    bg_image = Image.open("bgtrois.jpg")  # Remplacez par votre fichier image
+    bg_image = Image.open("bgtrois.jpg") 
     bg_image = bg_image.resize((LONGUEUR, LONGUEUR), Image.LANCZOS)
     
     # 2. Convertir en format Tkinter
@@ -91,7 +91,7 @@ def creer_ecran_accueil():
     # Charger l'image de fond
     try:
        
-        img = Image.open("ff.jpg")  # Remplacez par le chemin de votre image
+        img = Image.open("ff.jpg") 
         img = img.resize((LONGUEUR, LONGUEUR), Image.LANCZOS)
         fond_accueil_img = ImageTk.PhotoImage(img)
         canva.create_image(0, 0, anchor="nw", image=fond_accueil_img, tags="accueil")
@@ -173,7 +173,7 @@ def toggle_musique():
 
 def jouer_son_ambiance():
     try:
-        pygame.mixer.music.load("ambiance.mp3")  # Remplacez par votre fichier audio
+        pygame.mixer.music.load("ambiance.mp3")  
         pygame.mixer.music.set_volume(0.3)  # Volume entre 0 et 1
         pygame.mixer.music.play(-1)  # -1 pour boucle infinie
     except Exception as e:
@@ -751,4 +751,5 @@ def reinitialiser_jeu():
     initialiser_jeu()
 
 creer_ecran_accueil()
+
 fenetre.mainloop()
