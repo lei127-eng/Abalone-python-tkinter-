@@ -89,73 +89,79 @@ indicateur_tour = None
 def creer_ecran_accueil():
     global fond_accueil_img
     
-    # Charger l'image de fond
+    # Appliquer le thème moderne
+    ModernTheme.apply_theme(fenetre)
+    
+    # Charger l'image de fond avec gestion d'erreur
     try:
-       
-        img = Image.open("ff.jpg") 
+        img = Image.open("ff.jpg")
         img = img.resize((LONGUEUR, LONGUEUR), Image.LANCZOS)
         fond_accueil_img = ImageTk.PhotoImage(img)
         canva.create_image(0, 0, anchor="nw", image=fond_accueil_img, tags="accueil")
     except Exception as e:
         print(f"Erreur chargement image de fond: {e}")
-        # Fond uni si l'image ne charge pas
-        canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="#AC69AC", outline="", tags="accueil")
+        canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, 
+                              fill=ModernTheme.COLORS['bg_dark'], 
+                              outline="", tags="accueil")
     
-    # Overlay semi-transparent pour améliorer la lisibilité
-    canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="black", stipple="gray25", tags="accueil")
+    # Overlay dégradé
+    canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, 
+                          fill=ModernTheme.COLORS['bg_dark'], 
+                          stipple="gray25", tags="accueil")
     
-    # Titre du jeu
-    canva.create_text(LONGUEUR/2, 150, text="ABALONE ", 
-                     fill="white", font=("Courier", 48, "bold"), 
-                     tags="accueil")
+    # Titre avec effet d'ombre
+    canva.create_text(LONGUEUR/2+5, 155, text="ABALONE", 
+                     fill=ModernTheme.COLORS['shadow'],
+                     font=("Segoe UI", 52, "bold"), tags="accueil")
+    canva.create_text(LONGUEUR/2, 150, text="ABALONE", 
+                     fill=ModernTheme.COLORS['gold'],
+                     font=("Segoe UI", 52, "bold"), tags="accueil")
     
-    # Bouton Start
-    btn_start = tk.Button(fenetre, text="COMMENCER", command=lancer_jeu,
-                        bg="#C76ADA", fg="white", font=("courier", 18,"bold"),
-                        padx=30, pady=15, relief="raised", bd=5)
-    canva.create_window(LONGUEUR/2, LONGUEUR-200, window=btn_start, tags="accueil")
+    # Sous-titre
+    canva.create_text(LONGUEUR/2, 200, text="Le jeu de stratégie millénaire",
+                     fill=ModernTheme.COLORS['text_secondary'],
+                     font=ModernTheme.FONTS['subtitle'], tags="accueil")
     
-    # Règles du jeu
-    regles_text = """RÈGLES DU JEU :
+    # Bouton Start stylisé
+    btn_start = ModernTheme.create_modern_button(fenetre, "COMMENCER", lancer_jeu, width=15)
+    canva.create_window(LONGUEUR/2, LONGUEUR-150, window=btn_start, tags="accueil")
+    
+    # Cadre des règles avec design moderne
+    regles_text = """RÈGLES DU JEU
+
 • Chaque joueur contrôle 14 billes
 • Déplacez 1, 2 ou 3 billes alignées
 • Poussez les billes adverses hors du plateau
-• SUMITO : 
-  - 2 billes peuvent pousser 1 bille adverse
-  - 3 billes peuvent pousser 1 ou 2 billes
+
+SUMITO :
+  • 2 billes peuvent pousser 1 bille adverse
+  • 3 billes peuvent pousser 1 ou 2 billes
+
 • Premier à éjecter 6 billes gagne !
 
 CONTROLES :
-• Clic : sélectionner une bille
-• Shift+Clic : sélection multiple (max 3)
-• Clic à côté : pousser dans la direction"""
+  • Clic : sélectionner une bille
+  • Shift+Clic : sélection multiple (max 3)
+  • Clic à côté : pousser dans la direction"""
     
-    cadre_regles = tk.Frame(canva, bg="#613363", bd=3, relief="ridge")
-    cadre_regles.place(relx=0.5, rely=0.5, anchor="center", width=600, height=300)
+    cadre_regles = tk.Frame(canva, bg=ModernTheme.COLORS['bg_card'], 
+                           bd=0, relief="flat")
+    cadre_regles.place(relx=0.5, rely=0.5, anchor="center", width=500, height=320)
+    
+    # Titre des règles
+    titre_rules = tk.Label(cadre_regles, text="📜 RÈGLES", 
+                          bg=ModernTheme.COLORS['bg_card'],
+                          fg=ModernTheme.COLORS['gold'],
+                          font=ModernTheme.FONTS['subtitle'])
+    titre_rules.pack(pady=(15,5))
     
     label_regles = tk.Label(cadre_regles, text=regles_text, 
-                          justify="left", bg="#704A6E", 
-                          fg="white", font=("Gabriola", 12))
-    label_regles.pack(padx=20, pady=20)
+                          justify="left", bg=ModernTheme.COLORS['bg_card'],
+                          fg=ModernTheme.COLORS['text_secondary'],
+                          font=ModernTheme.FONTS['rules'])
+    label_regles.pack(padx=20, pady=10)
+    
     canva.create_window(LONGUEUR/2, 400, window=cadre_regles, tags="accueil")
-def lancer_jeu():
-    global LONGUEUR, CENTRE, DIAMETRE, joueur1, joueur2, joueur_actif
-    global canva, score_j1, score_j2, indicateur_tour
-    
-    # Supprimer l'écran d'accueil et redimensionner
-    canva.delete("accueil")
-    LONGUEUR = 600
-    CENTRE = (LONGUEUR / 2, LONGUEUR / 2)
-    DIAMETRE = LONGUEUR / 1.5
-    canva.config(width=LONGUEUR, height=LONGUEUR)
-    fenetre.geometry(f"{LONGUEUR}x{LONGUEUR}")
-    
-    # Initialiser les joueurs
-    joueur1 = Joueur(1, COULEUR_JOUEUR1)
-    joueur2 = Joueur(2, COULEUR_JOUEUR2)
-    joueur_actif = joueur1
-    
-    # Initialiser le jeu
     initialiser_jeu()
 
 
