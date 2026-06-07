@@ -6,13 +6,10 @@ import pygame
 from pygame import mixer
 from playsound import playsound
 import threading
-from theme import ModernTheme
-
 if not pygame.mixer.get_init():
     pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-
 # Variables globales
-LONGUEUR = 800
+LONGUEUR = 800  # Taille initiale pour l'écran d'accueil
 CENTRE = (LONGUEUR / 2, LONGUEUR / 2)
 DIAMETRE = LONGUEUR / 1.5
 JOUEUR1_IMG = None
@@ -20,9 +17,9 @@ JOUEUR2_IMG = None
 shift_enfonce = False
 pions_selectionnes = []
 position_origine = {}
-COULEUR_JOUEUR1 = ModernTheme.COLORS['player1']
-COULEUR_JOUEUR2 = ModernTheme.COLORS['player2']
-joueur_courant = 1
+COULEUR_JOUEUR1 = "#9400D3"  # Violet
+COULEUR_JOUEUR2 = "#00FFFF"  # Cyan
+joueur_courant = 1  # 1 ou 2
 
 # Directions en degrés
 DIRECTIONS = {
@@ -36,23 +33,29 @@ DIRECTIONS = {
 
 # Fenêtre principale
 fenetre = tk.Tk()
-fenetre.title("Abalone - Jeu de stratégie")
-ModernTheme.apply_theme(fenetre)
+fenetre.title("Abalone ")
 
-canva = tk.Canvas(fenetre, width=LONGUEUR, height=LONGUEUR, bg=ModernTheme.COLORS['bg_dark'], highlightthickness=0)
+canva = tk.Canvas(fenetre, width=LONGUEUR, height=LONGUEUR, bg="#1E2A47")
 canva.pack()
 
 # Charger et afficher l'image de fond
 try:
-    bg_image = Image.open("bgtrois.jpg")
+    # 1. Chargez l'image avec Pillow
+    bg_image = Image.open("bgtrois.jpg")  # Remplacez par votre fichier image
     bg_image = bg_image.resize((LONGUEUR, LONGUEUR), Image.LANCZOS)
+    
+    # 2. Convertir en format Tkinter
     bg_photo = ImageTk.PhotoImage(bg_image)
+    
+    # 3. Afficher l'image sur le canvas
     canva.create_image(0, 0, anchor="nw", image=bg_photo)
-    canva.bg_image = bg_photo
+    
+    # 4. Conserver une référence à l'image
+    canva.bg_image = bg_photo  # Important pour éviter le garbage collection
+    
 except Exception as e:
     print(f"Erreur de chargement de l'image de fond: {e}")
-
-angles = [0, 60, 120, 180, 240, 360]
+angles = [0, 60, 120, 180, 240, 300]
 liste_sommet = []
 
 # Déclaration des variables des joueurs
@@ -81,83 +84,59 @@ score_j1 = None
 score_j2 = None
 indicateur_tour = None
 
+
 def creer_ecran_accueil():
     global fond_accueil_img
     
-    # Appliquer le thème moderne
-    ModernTheme.apply_theme(fenetre)
-    
     # Charger l'image de fond
     try:
-        img = Image.open("ff.jpg")
+       
+        img = Image.open("ff.jpg")  # Remplacez par le chemin de votre image
         img = img.resize((LONGUEUR, LONGUEUR), Image.LANCZOS)
         fond_accueil_img = ImageTk.PhotoImage(img)
         canva.create_image(0, 0, anchor="nw", image=fond_accueil_img, tags="accueil")
     except Exception as e:
         print(f"Erreur chargement image de fond: {e}")
-        canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, 
-                              fill=ModernTheme.COLORS['bg_dark'], 
-                              outline="", tags="accueil")
+        # Fond uni si l'image ne charge pas
+        canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="#AC69AC", outline="", tags="accueil")
     
-    # Overlay dégradé
-    canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, 
-                          fill=ModernTheme.COLORS['bg_dark'], 
-                          stipple="gray25", tags="accueil")
+    # Overlay semi-transparent pour améliorer la lisibilité
+    canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="black", stipple="gray25", tags="accueil")
     
-    # Titre avec effet d'ombre
-    canva.create_text(LONGUEUR/2+5, 155, text="ABALONE", 
-                     fill=ModernTheme.COLORS['shadow'],
-                     font=("Segoe UI", 52, "bold"), tags="accueil")
-    canva.create_text(LONGUEUR/2, 150, text="ABALONE", 
-                     fill=ModernTheme.COLORS['gold'],
-                     font=("Segoe UI", 52, "bold"), tags="accueil")
+    # Titre du jeu
+    canva.create_text(LONGUEUR/2, 150, text="ABALONE ", 
+                     fill="white", font=("Courier", 48, "bold"), 
+                     tags="accueil")
     
-    # Sous-titre
-    canva.create_text(LONGUEUR/2, 200, text="Le jeu de stratégie millénaire",
-                     fill=ModernTheme.COLORS['text_secondary'],
-                     font=ModernTheme.FONTS['subtitle'], tags="accueil")
+    # Bouton Start
+    btn_start = tk.Button(fenetre, text="COMMENCER", command=lancer_jeu,
+                        bg="#C76ADA", fg="white", font=("courier", 18,"bold"),
+                        padx=30, pady=15, relief="raised", bd=5)
+    canva.create_window(LONGUEUR/2, LONGUEUR-200, window=btn_start, tags="accueil")
     
-    # Bouton Start stylisé
-    btn_start = ModernTheme.create_modern_button(fenetre, "COMMENCER", lancer_jeu, width=15)
-    canva.create_window(LONGUEUR/2, LONGUEUR-150, window=btn_start, tags="accueil")
-    
-    # Cadre des règles avec design moderne
-    regles_text = """RÈGLES DU JEU
-
+    # Règles du jeu
+    regles_text = """RÈGLES DU JEU :
 • Chaque joueur contrôle 14 billes
 • Déplacez 1, 2 ou 3 billes alignées
 • Poussez les billes adverses hors du plateau
-
-SUMITO :
-  • 2 billes peuvent pousser 1 bille adverse
-  • 3 billes peuvent pousser 1 ou 2 billes
-
+• SUMITO : 
+  - 2 billes peuvent pousser 1 bille adverse
+  - 3 billes peuvent pousser 1 ou 2 billes
 • Premier à éjecter 6 billes gagne !
 
 CONTROLES :
-  • Clic : sélectionner une bille
-  • Shift+Clic : sélection multiple (max 3)
-  • Clic à côté : pousser dans la direction"""
+• Clic : sélectionner une bille
+• Shift+Clic : sélection multiple (max 3)
+• Clic à côté : pousser dans la direction"""
     
-    cadre_regles = tk.Frame(canva, bg=ModernTheme.COLORS['bg_card'], 
-                           bd=0, relief="flat")
-    cadre_regles.place(relx=0.5, rely=0.5, anchor="center", width=500, height=320)
-    
-    # Titre des règles
-    titre_rules = tk.Label(cadre_regles, text="📜 RÈGLES", 
-                          bg=ModernTheme.COLORS['bg_card'],
-                          fg=ModernTheme.COLORS['gold'],
-                          font=ModernTheme.FONTS['subtitle'])
-    titre_rules.pack(pady=(15,5))
+    cadre_regles = tk.Frame(canva, bg="#613363", bd=3, relief="ridge")
+    cadre_regles.place(relx=0.5, rely=0.5, anchor="center", width=600, height=300)
     
     label_regles = tk.Label(cadre_regles, text=regles_text, 
-                          justify="left", bg=ModernTheme.COLORS['bg_card'],
-                          fg=ModernTheme.COLORS['text_secondary'],
-                          font=ModernTheme.FONTS['rules'])
-    label_regles.pack(padx=20, pady=10)
-    
+                          justify="left", bg="#704A6E", 
+                          fg="white", font=("Gabriola", 12))
+    label_regles.pack(padx=20, pady=20)
     canva.create_window(LONGUEUR/2, 400, window=cadre_regles, tags="accueil")
-
 def lancer_jeu():
     global LONGUEUR, CENTRE, DIAMETRE, joueur1, joueur2, joueur_actif
     global canva, score_j1, score_j2, indicateur_tour
@@ -171,12 +150,14 @@ def lancer_jeu():
     fenetre.geometry(f"{LONGUEUR}x{LONGUEUR}")
     
     # Initialiser les joueurs
-    joueur1 = Joueur(1, ModernTheme.COLORS['player1'])
-    joueur2 = Joueur(2, ModernTheme.COLORS['player2'])
+    joueur1 = Joueur(1, COULEUR_JOUEUR1)
+    joueur2 = Joueur(2, COULEUR_JOUEUR2)
     joueur_actif = joueur1
     
     # Initialiser le jeu
     initialiser_jeu()
+
+
 
 class Joueur:
     def __init__(self, numero, couleur):
@@ -184,7 +165,6 @@ class Joueur:
         self.couleur = couleur
         self.score = 0
         self.billes = []
-
 def toggle_musique():
     if pygame.mixer.music.get_busy():
         pygame.mixer.music.pause()
@@ -193,12 +173,11 @@ def toggle_musique():
 
 def jouer_son_ambiance():
     try:
-        pygame.mixer.music.load("ambiance.mp3")
-        pygame.mixer.music.set_volume(0.3)
-        pygame.mixer.music.play(-1)
+        pygame.mixer.music.load("ambiance.mp3")  # Remplacez par votre fichier audio
+        pygame.mixer.music.set_volume(0.3)  # Volume entre 0 et 1
+        pygame.mixer.music.play(-1)  # -1 pour boucle infinie
     except Exception as e:
         print(f"Erreur lors du chargement de la musique: {e}")
-
 def initialiser_jeu():
     # Démarrer la musique d'ambiance
     jouer_son_ambiance()
@@ -232,10 +211,8 @@ def initialiser_jeu():
 
     joueur1.billes = pions_impairs_joueur_1 + pions_pairs_joueur_1
     joueur2.billes = pions_impairs_joueur_2 + pions_pairs_joueur_2
-    
-    btn_musique = ModernTheme.create_secondary_button(fenetre, "🎵", toggle_musique, width=3, height=1)
-    btn_musique.place(x=10, y=10)
-    
+    btn_musique = tk.Button(fenetre, text="Musique ON/OFF", command=toggle_musique)
+    btn_musique.place(x=10, y=10)  # Positionnement en haut à gauche
     canva.bind("<Button-1>", on_canvas_click)
 
 def charger_avatars():
@@ -250,40 +227,27 @@ def charger_avatars():
 
 def creer_avatars_et_scores():
     # Cadre et avatar joueur 1
-    cadre_j1 = canva.create_rectangle(20, 20, 120, 120, 
-                                      fill=ModernTheme.COLORS['bg_card'], 
-                                      outline=ModernTheme.COLORS['gold'], 
-                                      width=2)
+    cadre_j1 = canva.create_rectangle(20, 20, 120, 120, fill="#34495E", outline="#5D6D7E", width=2)
     if JOUEUR1_IMG:
         avatar_j1 = canva.create_image(70, 70, image=JOUEUR1_IMG)
     else:
-        avatar_j1 = canva.create_oval(40, 40, 100, 100, fill=ModernTheme.COLORS['player1'],
-                                      outline=ModernTheme.COLORS['gold'], width=2)
-    
+        avatar_j1 = canva.create_oval(40, 40, 100, 100, fill=COULEUR_JOUEUR1)
     score_j1 = canva.create_text(70, 110, text=f"Score: {joueur1.score}", 
-                               fill=ModernTheme.COLORS['gold'],
-                               font=ModernTheme.FONTS['score'])
+                               fill="white", font=("Arial", 10, "bold"))
     
     # Cadre et avatar joueur 2
     cadre_j2 = canva.create_rectangle(LONGUEUR-120, LONGUEUR-120, LONGUEUR-20, LONGUEUR-20, 
-                                    fill=ModernTheme.COLORS['bg_card'], 
-                                    outline=ModernTheme.COLORS['gold'], 
-                                    width=2)
+                                    fill="#34495E", outline="#5D6D7E", width=2)
     if JOUEUR2_IMG:
         avatar_j2 = canva.create_image(LONGUEUR-70, LONGUEUR-70, image=JOUEUR2_IMG)
     else:
-        avatar_j2 = canva.create_oval(LONGUEUR-100, LONGUEUR-100, LONGUEUR-40, LONGUEUR-40, 
-                                      fill=ModernTheme.COLORS['player2'],
-                                      outline=ModernTheme.COLORS['gold'], width=2)
-    
+        avatar_j2 = canva.create_oval(LONGUEUR-100, LONGUEUR-100, LONGUEUR-40, LONGUEUR-40, fill=COULEUR_JOUEUR2)
     score_j2 = canva.create_text(LONGUEUR-70, LONGUEUR-30, text=f"Score: {joueur2.score}", 
-                               fill=ModernTheme.COLORS['gold'],
-                               font=ModernTheme.FONTS['score'])
+                               fill="white", font=("Arial", 10, "bold"))
     
     indicateur_tour = canva.create_text(LONGUEUR/2, 30, 
                                      text=f"Tour du Joueur {joueur_actif.numero}",
-                                     fill=ModernTheme.COLORS['gold'],
-                                     font=ModernTheme.FONTS['subtitle'])
+                                     fill="white", font=("Arial", 12, "bold"))
     return score_j1, score_j2, indicateur_tour
 
 def dessiner_plateau_3d():
@@ -295,13 +259,6 @@ def dessiner_plateau_3d():
         sommet_y = CENTRE[1] + DIAMETRE / 2 * math.sin(math.radians(angle))
         liste_sommet.append((sommet_x, sommet_y))
     
-    # Palette de dégradé élégante
-    colors = [
-        '#1a2744', '#1d2b4a', '#202f50', '#233456', '#26385c',
-        '#293d62', '#2c4268', '#2f466e', '#324b74', '#35507a',
-        '#385580', '#3b5986', '#3e5e8c'
-    ]
-    
     for i in range(50, 0, -1):
         ratio = i/50
         temp_sommet = []
@@ -310,26 +267,26 @@ def dessiner_plateau_3d():
             ny = CENTRE[1] + (y - CENTRE[1]) * ratio
             temp_sommet.extend([nx, ny])
         
-        color_idx = min(int((1 - ratio) * len(colors)), len(colors)-1)
-        color = colors[color_idx]
+        r = min(255, int(0x48 * (0.7 + 0.3 * (ratio * math.sin(math.radians(45))))))
+        g = min(255, int(0x3D * (0.7 + 0.3 * (ratio * math.sin(math.radians(45))))))
+        b = min(255, int(0x8B * (0.7 + 0.3 * (ratio * math.sin(math.radians(45))))))
+        color = "#%02x%02x%02x" % (r, g, b)
         canva.create_polygon(temp_sommet, fill=color, outline="")
     
-    # Bordure dorée
     border_points = []
     for x, y in liste_sommet:
         border_points.extend([x, y])
-    canva.create_polygon(border_points, fill="", outline=ModernTheme.COLORS['gold'], width=4)
+    canva.create_polygon(border_points, fill="", outline="#A5A5C7", width=4)
     
-    # Ombre portée
     shadow_points = []
-    shadow_offset = 10
+    shadow_offset = 8
     for x, y in liste_sommet:
         shadow_points.extend([x+shadow_offset, y+shadow_offset])
-    canva.create_polygon(shadow_points, fill=ModernTheme.COLORS['shadow'], outline="")
+    canva.create_polygon(shadow_points, fill="#000000", outline="")
     canva.lower(canva.find_all()[-1])
 
 def create_simple_hole(x0, y0, x1, y1, color):
-    ModernTheme.create_hole(canva, x0, y0, x1, y1)
+    canva.create_oval(x0, y0, x1, y1, fill=color, outline="#5D6D7E", width=1)
 
 def dessiner_ligne_haut():
     milieu_ligne = len(trous) // 2
@@ -377,45 +334,45 @@ def dessiner_ligne_bas():
                 create_simple_hole(x, y, x1, y1, "#2C3E50")
 
 def placer_pions_haut():
-    global pions_impairs_joueur_1, pions_pairs_joueur_1
     indice_impairs = 0
     indice_pair = 0
     milieu_ligne = len(plateau_billes) // 2
     
     for i in range(0, milieu_ligne + 1):
-        if len(plateau_billes[i]) % 2 != 0:
+        if len(plateau_billes[i]) % 2 != 0:  
             for j in range(len(plateau_billes[i])):
                 if indice_impairs < len(position_trous_haut_impairs):
                     coords = position_trous_haut_impairs[indice_impairs]
                     indice_impairs += 1
                     
+                    couleur = "#94928d"  
                     if plateau_billes[i][j] == 1:
-                        couleur = ModernTheme.COLORS['player1']
-                        pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
-                        pions_impairs_joueur_1.append(pion)
+                        couleur = COULEUR_JOUEUR1  
                     elif plateau_billes[i][j] == 2:
-                        couleur = ModernTheme.COLORS['player2']
-                        pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
+                        couleur = "white"  
+                    
+                    if plateau_billes[i][j] != 0:
+                        pion = canva.create_oval(coords[0], coords[1], coords[2], coords[3], fill=couleur)
                         pions_impairs_joueur_1.append(pion)
-                    position_origine[pion] = coords
-        else:
+                        position_origine[pion] = coords
+        else: 
             for j in range(len(plateau_billes[i])):
                 if indice_pair < len(position_trous_haut_pairs):
                     coords = position_trous_haut_pairs[indice_pair]
                     indice_pair += 1
                     
+                    couleur = "#94928d"  
                     if plateau_billes[i][j] == 1:
-                        couleur = ModernTheme.COLORS['player1']
-                        pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
-                        pions_pairs_joueur_1.append(pion)
+                        couleur = COULEUR_JOUEUR1  
                     elif plateau_billes[i][j] == 2:
-                        couleur = ModernTheme.COLORS['player2']
-                        pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
+                        couleur = "white"   
+                    
+                    if plateau_billes[i][j] != 0:
+                        pion = canva.create_oval(coords[0], coords[1], coords[2], coords[3], fill=couleur)
                         pions_pairs_joueur_1.append(pion)
-                    position_origine[pion] = coords
+                        position_origine[pion] = coords
 
 def placer_pions_bas():
-    global pions_impairs_joueur_2, pions_pairs_joueur_2
     indice_impairs = 0
     indice_pair = 0
     milieu_ligne = len(plateau_billes) // 2
@@ -428,37 +385,41 @@ def placer_pions_bas():
                     indice_impairs += 1
                     
                     if plateau_billes[i][j] == 1:
-                        couleur = ModernTheme.COLORS['player1']
+                        couleur = COULEUR_JOUEUR1
                     elif plateau_billes[i][j] == 2:
-                        couleur = ModernTheme.COLORS['player2']
+                        couleur = COULEUR_JOUEUR2
                     else:
-                        couleur = "#2a3a5a"
+                        couleur = "#94928d"
                     
-                    pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
-                    pions_impairs_joueur_2.append(pion)
-                    position_origine[pion] = coords
-        else:
+                    if plateau_billes[i][j] != 0:
+                        pion = canva.create_oval(coords[0], coords[1], coords[2], coords[3], 
+                                               fill=couleur, outline="#5D6D7E", width=1)
+                        pions_impairs_joueur_2.append(pion)
+                        position_origine[pion] = coords
+        else: 
             for j in range(len(plateau_billes[i])):
                 if indice_pair < len(position_trous_bas_pairs):
                     coords = position_trous_bas_pairs[indice_pair]
                     indice_pair += 1
                     
                     if plateau_billes[i][j] == 1:
-                        couleur = ModernTheme.COLORS['player1']
+                        couleur = COULEUR_JOUEUR1
                     elif plateau_billes[i][j] == 2:
-                        couleur = ModernTheme.COLORS['player2']
+                        couleur = COULEUR_JOUEUR2
                     else:
-                        couleur = "#2a3a5a"
+                        couleur = "#94928d"
                     
-                    pion = ModernTheme.create_glow_oval(canva, coords[0], coords[1], coords[2], coords[3], couleur, glow=True)
-                    pions_pairs_joueur_2.append(pion)
-                    position_origine[pion] = coords
+                    if plateau_billes[i][j] != 0:
+                        pion = canva.create_oval(coords[0], coords[1], coords[2], coords[3],
+                                               fill=couleur, outline="#5D6D7E", width=1)
+                        pions_pairs_joueur_2.append(pion)
+                        position_origine[pion] = coords
 
 def dessiner_selection():
     for pion in joueur1.billes + joueur2.billes:
-        canva.itemconfig(pion, outline=ModernTheme.COLORS['silver'], width=1)
+        canva.itemconfig(pion, outline="#5D6D7E", width=1)
     for pion in pions_selectionnes:
-        canva.itemconfig(pion, outline=ModernTheme.COLORS['gold'], width=4)
+        canva.itemconfig(pion, outline="yellow", width=3)
 
 def get_pion_a_pos(x, y):
     objets = canva.find_overlapping(x, y, x, y)
@@ -657,7 +618,7 @@ def deplacer_pions(pions_selectionnes, direction):
     
     canva.itemconfig(indicateur_tour, text=f"Tour du Joueur {3 - joueur_courant}")
     return True
-
+ 
 def trouver_direction_deplacement(pions_selectionnes, position_clic):
     if not pions_selectionnes:
         return None
@@ -735,51 +696,44 @@ def on_canvas_click(event):
             pions_selectionnes = []
             dessiner_selection()
 
-            # Vérifier la fin de partie
-            if joueur1.score >= 6:
-                afficher_ecran_fin(1)
-            elif joueur2.score >= 6:
-                afficher_ecran_fin(2)
-
-def afficher_ecran_fin(vainqueur):
+            def afficher_ecran_fin(vainqueur):
     # Fond semi-transparent
-    canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="black", stipple="gray50", tags="fin")
+                canva.create_rectangle(0, 0, LONGUEUR, LONGUEUR, fill="black", stipple="gray50", tags="fin")
     
-    # Cadre principal avec effet
-    cadre = canva.create_rectangle(LONGUEUR/4, LONGUEUR/3, 3*LONGUEUR/4, 2*LONGUEUR/3, 
-                                 fill=ModernTheme.COLORS['bg_card'], 
-                                 outline=ModernTheme.COLORS['gold'], 
-                                 width=3, tags="fin")
+    # Cadre principal
+                cadre = canva.create_rectangle(LONGUEUR/4, LONGUEUR/3, 3*LONGUEUR/4, 2*LONGUEUR/3, 
+                                 fill="#34495E", outline="#5D6D7E", width=3, tags="fin")
     
     # Message de victoire
     if vainqueur == 1:
-        texte = f"🏆 VICTOIRE !\nLe Joueur 1 remporte la partie !"
-        couleur = ModernTheme.COLORS['player1']
+        texte = f"Le Joueur 1 a gagné !"
+        couleur = COULEUR_JOUEUR1
     else:
-        texte = f"🏆 VICTOIRE !\nLe Joueur 2 remporte la partie !"
-        couleur = ModernTheme.COLORS['player2']
+        texte = f"Le Joueur 2 a gagné !"
+        couleur = COULEUR_JOUEUR2
     
-    canva.create_text(LONGUEUR/2, LONGUEUR/2 - 60, text=texte, 
-                     fill=couleur, font=("Segoe UI", 20, "bold"), 
-                     tags="fin", justify="center")
+    canva.create_text(LONGUEUR/2, LONGUEUR/2 - 50, text=texte, 
+                     fill=couleur, font=("Courier", 24, "bold"), tags="fin")
     
     # Scores finaux
-    score_text = f"Scores finaux\nJoueur 1: {joueur1.score} points\nJoueur 2: {joueur2.score} points"
+    score_text = f"Scores finaux:\nJoueur 1: {joueur1.score} points\nJoueur 2: {joueur2.score} points"
     canva.create_text(LONGUEUR/2, LONGUEUR/2, text=score_text, 
-                     fill=ModernTheme.COLORS['text_secondary'], 
-                     font=ModernTheme.FONTS['rules'], tags="fin")
+                     fill="white", font=("Courier", 14), tags="fin")
     
     # Bouton Quitter
-    btn_quitter = ModernTheme.create_secondary_button(fenetre, "QUITTER", fenetre.destroy, width=10)
+    btn_quitter = tk.Button(fenetre, text="QUITTER", command=fenetre.destroy,
+                          bg="#C76ADA", fg="white", font=("courier", 14, "bold"),
+                          padx=20, pady=10)
     canva.create_window(LONGUEUR/2, LONGUEUR/2 + 80, window=btn_quitter, tags="fin")
     
     # Bouton Rejouer
-    btn_rejouer = ModernTheme.create_modern_button(fenetre, "REJOUER", reinitialiser_jeu, width=10)
+    btn_rejouer = tk.Button(fenetre, text="REJOUER", command=reinitialiser_jeu,
+                          bg="#4CAF50", fg="white", font=("courier", 14, "bold"),
+                          padx=20, pady=10)
     canva.create_window(LONGUEUR/2, LONGUEUR/2 + 130, window=btn_rejouer, tags="fin")
     
     # Désactiver les interactions avec le plateau
     canva.unbind("<Button-1>")
-
 def reinitialiser_jeu():
     global joueur1, joueur2, joueur_courant, pions_selectionnes
     
@@ -787,14 +741,17 @@ def reinitialiser_jeu():
     canva.delete("fin")
     
     # Réinitialiser les joueurs
-    joueur1 = Joueur(1, ModernTheme.COLORS['player1'])
-    joueur2 = Joueur(2, ModernTheme.COLORS['player2'])
+    joueur1 = Joueur(1, COULEUR_JOUEUR1)
+    joueur2 = Joueur(2, COULEUR_JOUEUR2)
     joueur_courant = 1
     pions_selectionnes = []
     
     # Réinitialiser l'interface
     canva.delete("all")
     initialiser_jeu()
+
+creer_ecran_accueil()
+fenetre.mainloop()
 
 # Lancer le jeu
 creer_ecran_accueil()
