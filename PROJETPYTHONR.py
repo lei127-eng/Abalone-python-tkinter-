@@ -6,6 +6,7 @@ import pygame
 from pygame import mixer
 from playsound import playsound
 import threading
+from theme import ModernTheme 
 if not pygame.mixer.get_init():
     pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
 # Variables globales
